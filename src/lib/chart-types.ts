@@ -41,7 +41,7 @@ export type AvailableMetric = {
   latestMs: number
 }
 
-export type TimeGranularity = "minute" | "hour" | "day"
+export type TimeGranularity = "5min" | "10min" | "30min" | "hour" | "day"
 
 // ── Project Usage Types ─────────────────────────────────────────────────────
 

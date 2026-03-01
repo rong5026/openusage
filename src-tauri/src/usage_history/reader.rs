@@ -117,7 +117,7 @@ impl UsageDb {
     }
 
     /// Get aggregated summary data, bucketed by granularity.
-    /// Granularity: "minute", "hour", "day"
+    /// Granularity: "5min", "10min", "30min", "hour", "day"
     pub fn get_summary(
         &self,
         provider_id: &str,
@@ -127,7 +127,9 @@ impl UsageDb {
         granularity: &str,
     ) -> Result<UsageSummaryResponse, String> {
         let bucket_ms: i64 = match granularity {
-            "minute" => 60_000,
+            "5min" => 5 * 60_000,
+            "10min" => 10 * 60_000,
+            "30min" => 30 * 60_000,
             "hour" => 3_600_000,
             "day" => 86_400_000,
             _ => return Err(format!("invalid granularity: {}", granularity)),

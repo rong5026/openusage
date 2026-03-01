@@ -7,7 +7,9 @@ interface TimeRangeSelectorProps {
 }
 
 const OPTIONS: { label: string; value: TimeGranularity }[] = [
-  { label: "1m", value: "minute" },
+  { label: "5m", value: "5min" },
+  { label: "10m", value: "10min" },
+  { label: "30m", value: "30min" },
   { label: "1h", value: "hour" },
   { label: "1d", value: "day" },
 ]

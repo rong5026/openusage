@@ -18,7 +18,7 @@ type ChartMode = "progress" | "tokens" | "cost"
 function formatTimestamp(timestampMs: number, granularity: TimeGranularity): string {
   const date = new Date(timestampMs)
 
-  if (granularity === "minute") {
+  if (granularity === "5min" || granularity === "10min" || granularity === "30min") {
     const hour = date.getHours().toString().padStart(2, "0")
     const minute = date.getMinutes().toString().padStart(2, "0")
     return `${hour}:${minute}`

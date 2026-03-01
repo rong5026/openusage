@@ -7,9 +7,11 @@ import type {
 } from "@/lib/chart-types"
 
 const RANGE_MS: Record<TimeGranularity, number> = {
-  minute: 60 * 60 * 1000,        // 1 hour
-  hour: 24 * 60 * 60 * 1000,     // 24 hours
-  day: 30 * 24 * 60 * 60 * 1000, // 30 days
+  "5min": 3 * 60 * 60 * 1000,      // 3 hours
+  "10min": 6 * 60 * 60 * 1000,     // 6 hours
+  "30min": 24 * 60 * 60 * 1000,    // 24 hours
+  hour: 7 * 24 * 60 * 60 * 1000,   // 7 days
+  day: 30 * 24 * 60 * 60 * 1000,   // 30 days
 }
 
 type UseUsageHistoryOptions = {
