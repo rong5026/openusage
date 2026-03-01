@@ -42,3 +42,35 @@ export type AvailableMetric = {
 }
 
 export type TimeGranularity = "minute" | "hour" | "day"
+
+// ── Project Usage Types ─────────────────────────────────────────────────────
+
+export type ProjectDailyEntry = {
+  date: string
+  totalTokens: number
+  totalCost: number
+  inputTokens: number
+  outputTokens: number
+  cacheCreationTokens: number
+  cacheReadTokens: number
+}
+
+export type ProjectUsageEntry = {
+  projectId: string
+  displayName: string
+  totalTokens: number
+  totalCost: number
+  inputTokens: number
+  outputTokens: number
+  cacheCreationTokens: number
+  cacheReadTokens: number
+  modelsUsed: string[]
+  daily: ProjectDailyEntry[]
+}
+
+export type ProjectUsageResponse = {
+  provider: string
+  projects: ProjectUsageEntry[]
+  totalTokens: number
+  totalCost: number
+}

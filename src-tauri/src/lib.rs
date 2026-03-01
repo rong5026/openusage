@@ -3,6 +3,7 @@ mod app_nap;
 mod panel;
 mod plugin_engine;
 mod usage_history;
+mod project_usage;
 mod tray;
 #[cfg(target_os = "macos")]
 mod webkit_config;
@@ -458,6 +459,18 @@ fn get_available_metrics(
     db.available_metrics(&provider_id)
 }
 
+#[tauri::command]
+async fn get_project_usage(
+    provider: String,
+    since: Option<String>,
+) -> Result<project_usage::ProjectUsageResponse, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        project_usage::query_project_usage(&provider, since.as_deref())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
@@ -495,7 +508,8 @@ pub fn run() {
             update_global_shortcut,
             get_usage_history,
             get_usage_summary,
-            get_available_metrics
+            get_available_metrics,
+            get_project_usage
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]

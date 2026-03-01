@@ -1,9 +1,14 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ProviderCard } from "@/components/provider-card"
 import { ProviderAnalyticsPage } from "@/pages/provider-analytics"
+import { ProviderProjectsPage } from "@/pages/provider-projects"
 import type { PluginDisplayState } from "@/lib/plugin-types"
 import type { DisplayMode, ResetTimerDisplayMode } from "@/lib/settings"
+
+const CCUSAGE_PROVIDERS = new Set(["claude", "codex"])
+
+type TabId = "overview" | "analytics" | "projects"
 
 interface ProviderDetailPageProps {
   plugin: PluginDisplayState | null
@@ -20,7 +25,12 @@ export function ProviderDetailPage({
   resetTimerDisplayMode,
   onResetTimerDisplayModeToggle,
 }: ProviderDetailPageProps) {
-  const [activeTab, setActiveTab] = useState<"overview" | "analytics">("overview")
+  const [activeTab, setActiveTab] = useState<TabId>("overview")
+
+  const showProjectsTab = useMemo(
+    () => plugin != null && CCUSAGE_PROVIDERS.has(plugin.meta.id),
+    [plugin],
+  )
 
   if (!plugin) {
     return (
@@ -30,25 +40,26 @@ export function ProviderDetailPage({
     )
   }
 
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    { id: "analytics", label: "Analytics" },
+    ...(showProjectsTab ? [{ id: "projects" as TabId, label: "Projects" }] : []),
+  ]
+
   return (
     <div>
       <div className="flex gap-1 px-1 pt-2 pb-1 border-b border-border/50">
-        <Button
-          variant="ghost"
-          size="sm"
-          className={activeTab === "overview" ? "bg-muted text-foreground" : "text-muted-foreground"}
-          onClick={() => setActiveTab("overview")}
-        >
-          Overview
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={activeTab === "analytics" ? "bg-muted text-foreground" : "text-muted-foreground"}
-          onClick={() => setActiveTab("analytics")}
-        >
-          Analytics
-        </Button>
+        {tabs.map((tab) => (
+          <Button
+            key={tab.id}
+            variant="ghost"
+            size="sm"
+            className={activeTab === tab.id ? "bg-muted text-foreground" : "text-muted-foreground"}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </Button>
+        ))}
       </div>
 
       {activeTab === "overview" ? (
@@ -68,8 +79,10 @@ export function ProviderDetailPage({
           resetTimerDisplayMode={resetTimerDisplayMode}
           onResetTimerDisplayModeToggle={onResetTimerDisplayModeToggle}
         />
-      ) : (
+      ) : activeTab === "analytics" ? (
         <ProviderAnalyticsPage providerId={plugin.meta.id} />
+      ) : (
+        <ProviderProjectsPage providerId={plugin.meta.id} />
       )}
     </div>
   )
