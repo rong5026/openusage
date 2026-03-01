@@ -29,7 +29,17 @@ function formatTokens(value: number): string {
   return formatCountNumber(value)
 }
 
-const MODEL_OPACITY = [1, 0.7, 0.45, 0.25]
+const CHART_COLORS = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
+]
+
+function chartColor(index: number): string {
+  return CHART_COLORS[index % CHART_COLORS.length]
+}
 
 function shortenModelName(name: string): string {
   return name
@@ -62,8 +72,8 @@ function ModelBreakdownSection({
           return (
             <div
               key={mb.modelName}
-              className="h-full transition-all bg-primary"
-              style={{ width: `${pct}%`, opacity: MODEL_OPACITY[i % MODEL_OPACITY.length] }}
+              className="h-full transition-all"
+              style={{ width: `${pct}%`, backgroundColor: chartColor(i) }}
               title={`${shortenModelName(mb.modelName)}: ${formatCost(mb.cost)}`}
             />
           )
@@ -77,7 +87,7 @@ function ModelBreakdownSection({
           return (
             <div key={mb.modelName} className="flex items-center justify-between gap-2 text-[11px]">
               <div className="flex items-center gap-1.5 min-w-0">
-                <div className="size-2 shrink-0 rounded-sm bg-primary" style={{ opacity: MODEL_OPACITY[i % MODEL_OPACITY.length] }} />
+                <div className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: chartColor(i) }} />
                 <span className="truncate text-foreground/80">{shortenModelName(mb.modelName)}</span>
               </div>
               <div className="flex items-center gap-2 shrink-0 tabular-nums text-muted-foreground">
