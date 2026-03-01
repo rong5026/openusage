@@ -1,9 +1,10 @@
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjectUsage, type ProjectTimeRange } from "@/hooks/use-project-usage"
 import type { ModelBreakdown, ProjectUsageEntry } from "@/lib/chart-types"
 import { cn, formatCountNumber, formatFixedPrecisionNumber } from "@/lib/utils"
+import { useProjectAliasStore } from "@/stores/project-alias-store"
 
 interface ProviderProjectsPageProps {
   providerId: string
@@ -96,6 +97,71 @@ function ModelBreakdownSection({
   )
 }
 
+function EditableProjectName({
+  projectId,
+  displayName,
+}: {
+  projectId: string
+  displayName: string
+}) {
+  const { aliases, setAlias } = useProjectAliasStore()
+  const aliasName = aliases[projectId] || ""
+  const shownName = aliasName || displayName
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(shownName)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (editing) {
+      setDraft(aliasName || displayName)
+      requestAnimationFrame(() => inputRef.current?.select())
+    }
+  }, [editing, aliasName, displayName])
+
+  const commit = () => {
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== displayName) {
+      setAlias(projectId, trimmed)
+    } else {
+      setAlias(projectId, "")
+    }
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") commit()
+          if (e.key === "Escape") setEditing(false)
+        }}
+        className="truncate text-xs font-medium text-foreground bg-transparent border-b border-foreground/30 outline-none w-full"
+      />
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        setEditing(true)
+      }}
+      className="truncate text-xs font-medium text-foreground text-left hover:text-foreground/70 transition-colors"
+      title={`${projectId}\nClick to rename`}
+    >
+      {shownName}
+      {aliasName ? (
+        <span className="ml-1 text-[10px] text-muted-foreground font-normal">✎</span>
+      ) : null}
+    </button>
+  )
+}
+
 function ProjectBar({
   project,
   maxValue,
@@ -112,9 +178,7 @@ function ProjectBar({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-xs font-medium text-foreground" title={project.projectId}>
-          {project.displayName}
-        </span>
+        <EditableProjectName projectId={project.projectId} displayName={project.displayName} />
         <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
           {formattedValue}
         </span>
@@ -137,6 +201,8 @@ function ProjectBar({
 }
 
 function ProjectDetail({ project }: { project: ProjectUsageEntry }) {
+  const aliases = useProjectAliasStore((s) => s.aliases)
+  const displayName = aliases[project.projectId] || project.displayName
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -148,7 +214,7 @@ function ProjectDetail({ project }: { project: ProjectUsageEntry }) {
       >
         <div className="min-w-0">
           <div className="truncate text-xs font-medium text-foreground" title={project.projectId}>
-            {project.displayName}
+            {displayName}
           </div>
           <div className="text-[10px] text-muted-foreground">
             {formatCost(project.totalCost)} · {formatTokens(project.totalTokens)} tokens
@@ -194,7 +260,11 @@ function ProjectDetail({ project }: { project: ProjectUsageEntry }) {
 export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) {
   const [timeRange, setTimeRange] = useState<ProjectTimeRange>("30d")
   const [mode, setMode] = useState<ViewMode>("cost")
+  const hydrate = useProjectAliasStore((s) => s.hydrate)
 
+  useEffect(() => {
+    hydrate()
+  }, [hydrate])
   const { data, loading, error, refetch } = useProjectUsage({
     provider: providerId,
     timeRange,

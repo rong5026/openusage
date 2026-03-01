@@ -33,6 +33,7 @@ const LEGACY_TRAY_ICON_STYLE_KEY = "trayIconStyle";
 const LEGACY_TRAY_SHOW_PERCENTAGE_KEY = "trayShowPercentage";
 const GLOBAL_SHORTCUT_KEY = "globalShortcut";
 const START_ON_LOGIN_KEY = "startOnLogin";
+const PROJECT_ALIASES_KEY = "projectAliases"
 
 export const DEFAULT_AUTO_UPDATE_INTERVAL: AutoUpdateIntervalMinutes = 15;
 export const DEFAULT_THEME_MODE: ThemeMode = "system";
@@ -302,4 +303,19 @@ export async function loadStartOnLogin(): Promise<boolean> {
 export async function saveStartOnLogin(value: boolean): Promise<void> {
   await store.set(START_ON_LOGIN_KEY, value);
   await store.save();
+}
+
+export type ProjectAliases = Record<string, string>
+
+export async function loadProjectAliases(): Promise<ProjectAliases> {
+  const stored = await store.get<unknown>(PROJECT_ALIASES_KEY)
+  if (stored && typeof stored === "object" && !Array.isArray(stored)) {
+    return stored as ProjectAliases
+  }
+  return {}
+}
+
+export async function saveProjectAliases(aliases: ProjectAliases): Promise<void> {
+  await store.set(PROJECT_ALIASES_KEY, aliases)
+  await store.save()
 }
