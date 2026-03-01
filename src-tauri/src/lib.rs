@@ -2,6 +2,7 @@
 mod app_nap;
 mod panel;
 mod plugin_engine;
+mod usage_history;
 mod tray;
 #[cfg(target_os = "macos")]
 mod webkit_config;
@@ -100,6 +101,7 @@ pub struct AppState {
     pub plugins: Vec<plugin_engine::manifest::LoadedPlugin>,
     pub app_data_dir: PathBuf,
     pub app_version: String,
+    pub usage_db: Option<Arc<usage_history::UsageDb>>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -194,12 +196,13 @@ async fn start_probe_batch(
         })
         .unwrap_or_else(|| Uuid::new_v4().to_string());
 
-    let (plugins, app_data_dir, app_version) = {
+    let (plugins, app_data_dir, app_version, usage_db) = {
         let locked = state.lock().map_err(|e| e.to_string())?;
         (
             locked.plugins.clone(),
             locked.app_data_dir.clone(),
             locked.app_version.clone(),
+            locked.usage_db.clone(),
         )
     };
 
@@ -255,6 +258,7 @@ async fn start_probe_batch(
         let data_dir = app_data_dir.clone();
         let version = app_version.clone();
         let counter = Arc::clone(&remaining);
+        let db = usage_db.clone();
 
         tauri::async_runtime::spawn_blocking(move || {
             let plugin_id = plugin.manifest.id.clone();
@@ -271,6 +275,12 @@ async fn start_probe_batch(
                         log::warn!("probe {} completed with error", plugin_id);
                     } else {
                         log::info!("probe {} completed ok ({} lines)", plugin_id, output.lines.len());
+                    }
+
+                    // Record to usage history DB
+                    if let Some(ref db) = db {
+                        let ts = usage_history::now_millis();
+                        db.record_probe(&output, ts);
                     }
                     let _ = handle.emit("probe:result", ProbeResult { batch_id: bid, output });
                 }
@@ -411,6 +421,43 @@ fn list_plugins(state: tauri::State<'_, Mutex<AppState>>) -> Vec<PluginMeta> {
         .collect()
 }
 
+#[tauri::command]
+fn get_usage_history(
+    state: tauri::State<'_, Mutex<AppState>>,
+    provider_id: String,
+    metric_label: String,
+    from_ms: i64,
+    to_ms: i64,
+) -> Result<usage_history::reader::UsageHistoryResponse, String> {
+    let locked = state.lock().map_err(|e| e.to_string())?;
+    let db = locked.usage_db.as_ref().ok_or("usage history not available")?;
+    db.get_history(&provider_id, &metric_label, from_ms, to_ms)
+}
+
+#[tauri::command]
+fn get_usage_summary(
+    state: tauri::State<'_, Mutex<AppState>>,
+    provider_id: String,
+    metric_label: String,
+    from_ms: i64,
+    to_ms: i64,
+    granularity: String,
+) -> Result<usage_history::reader::UsageSummaryResponse, String> {
+    let locked = state.lock().map_err(|e| e.to_string())?;
+    let db = locked.usage_db.as_ref().ok_or("usage history not available")?;
+    db.get_summary(&provider_id, &metric_label, from_ms, to_ms, &granularity)
+}
+
+#[tauri::command]
+fn get_available_metrics(
+    state: tauri::State<'_, Mutex<AppState>>,
+    provider_id: String,
+) -> Result<Vec<usage_history::reader::AvailableMetric>, String> {
+    let locked = state.lock().map_err(|e| e.to_string())?;
+    let db = locked.usage_db.as_ref().ok_or("usage history not available")?;
+    db.available_metrics(&provider_id)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let runtime = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
@@ -445,7 +492,10 @@ pub fn run() {
             start_probe_batch,
             list_plugins,
             get_log_path,
-            update_global_shortcut
+            update_global_shortcut,
+            get_usage_history,
+            get_usage_summary,
+            get_available_metrics
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -468,11 +518,25 @@ pub fn run() {
             let resource_dir = app.path().resource_dir().expect("no resource dir");
             log::debug!("app_data_dir: {:?}", app_data_dir);
 
+            // Initialize usage history DB
+            let usage_db = match usage_history::UsageDb::open(&app_data_dir) {
+                Ok(db) => {
+                    log::info!("usage history DB initialized");
+                    db.cleanup();
+                    Some(Arc::new(db))
+                }
+                Err(e) => {
+                    log::warn!("failed to open usage history DB: {}", e);
+                    None
+                }
+            };
+
             let (_, plugins) = plugin_engine::initialize_plugins(&app_data_dir, &resource_dir);
             app.manage(Mutex::new(AppState {
                 plugins,
                 app_data_dir,
                 app_version: app.package_info().version.to_string(),
+                usage_db,
             }));
 
             tray::create(app.handle())?;
