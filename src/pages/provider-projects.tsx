@@ -29,12 +29,17 @@ function formatTokens(value: number): string {
   return formatCountNumber(value)
 }
 
-const MODEL_COLORS = [
-  "bg-foreground/80",
-  "bg-foreground/50",
-  "bg-foreground/30",
-  "bg-foreground/15",
+const CHART_COLORS = [
+  "var(--color-chart-1)",
+  "var(--color-chart-2)",
+  "var(--color-chart-3)",
+  "var(--color-chart-4)",
+  "var(--color-chart-5)",
 ]
+
+function chartColor(index: number): string {
+  return CHART_COLORS[index % CHART_COLORS.length]
+}
 
 function shortenModelName(name: string): string {
   return name
@@ -67,8 +72,8 @@ function ModelBreakdownSection({
           return (
             <div
               key={mb.modelName}
-              className={cn("h-full transition-all", MODEL_COLORS[i % MODEL_COLORS.length])}  
-              style={{ width: `${pct}%` }}
+              className="h-full transition-all"
+              style={{ width: `${pct}%`, backgroundColor: chartColor(i) }}
               title={`${shortenModelName(mb.modelName)}: ${formatCost(mb.cost)}`}
             />
           )
@@ -82,7 +87,7 @@ function ModelBreakdownSection({
           return (
             <div key={mb.modelName} className="flex items-center justify-between gap-2 text-[11px]">
               <div className="flex items-center gap-1.5 min-w-0">
-                <div className={cn("size-2 shrink-0 rounded-sm", MODEL_COLORS[i % MODEL_COLORS.length])} />
+                <div className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: chartColor(i) }} />
                 <span className="truncate text-foreground/80">{shortenModelName(mb.modelName)}</span>
               </div>
               <div className="flex items-center gap-2 shrink-0 tabular-nums text-muted-foreground">
@@ -166,10 +171,12 @@ function ProjectBar({
   project,
   maxValue,
   mode,
+  colorIndex,
 }: {
   project: ProjectUsageEntry
   maxValue: number
   mode: ViewMode
+  colorIndex: number
 }) {
   const value = mode === "cost" ? project.totalCost : project.totalTokens
   const width = maxValue > 0 ? (value / maxValue) * 100 : 0
@@ -185,8 +192,8 @@ function ProjectBar({
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
         <div
-          className="h-full rounded-full bg-foreground/70 transition-all duration-300"
-          style={{ width: `${Math.max(width, 0.5)}%` }}
+          className="h-full rounded-full transition-all duration-300"
+          style={{ width: `${Math.max(width, 0.5)}%`, backgroundColor: chartColor(colorIndex) }}
         />
       </div>
       <div className="flex gap-2 text-[10px] text-muted-foreground">
@@ -200,7 +207,7 @@ function ProjectBar({
   )
 }
 
-function ProjectDetail({ project }: { project: ProjectUsageEntry }) {
+function ProjectDetail({ project, colorIndex }: { project: ProjectUsageEntry; colorIndex: number }) {
   const aliases = useProjectAliasStore((s) => s.aliases)
   const displayName = aliases[project.projectId] || project.displayName
   const [expanded, setExpanded] = useState(false)
@@ -213,10 +220,13 @@ function ProjectDetail({ project }: { project: ProjectUsageEntry }) {
         onClick={() => setExpanded(!expanded)}
       >
         <div className="min-w-0">
-          <div className="truncate text-xs font-medium text-foreground" title={project.projectId}>
-            {displayName}
+          <div className="flex items-center gap-1.5">
+            <div className="size-2 shrink-0 rounded-full" style={{ backgroundColor: chartColor(colorIndex) }} />
+            <div className="truncate text-xs font-medium text-foreground" title={project.projectId}>
+              {displayName}
+            </div>
           </div>
-          <div className="text-[10px] text-muted-foreground">
+          <div className="text-[10px] text-muted-foreground pl-3.5">
             {formatCost(project.totalCost)} · {formatTokens(project.totalTokens)} tokens
           </div>
         </div>
@@ -362,12 +372,13 @@ export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) 
 
           {/* Bar chart overview */}
           <div className="space-y-2.5">
-            {projects.map((project) => (
+            {projects.map((project, i) => (
               <ProjectBar
                 key={project.projectId}
                 project={project}
                 maxValue={maxValue}
                 mode={mode}
+                colorIndex={i}
               />
             ))}
           </div>
@@ -377,10 +388,11 @@ export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) 
             <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
               Daily breakdown
             </div>
-            {projects.map((project) => (
+            {projects.map((project, i) => (
               <ProjectDetail
                 key={project.projectId}
                 project={project}
+                colorIndex={i}
               />
             ))}
           </div>
