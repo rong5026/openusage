@@ -55,6 +55,15 @@ export type ProjectDailyEntry = {
   cacheReadTokens: number
 }
 
+export type ModelBreakdown = {
+  modelName: string
+  inputTokens: number
+  outputTokens: number
+  cacheCreationTokens: number
+  cacheReadTokens: number
+  cost: number
+}
+
 export type ProjectUsageEntry = {
   projectId: string
   displayName: string
@@ -66,6 +75,7 @@ export type ProjectUsageEntry = {
   cacheReadTokens: number
   modelsUsed: string[]
   daily: ProjectDailyEntry[]
+  modelBreakdowns: ModelBreakdown[]
 }
 
 export type ProjectUsageResponse = {
@@ -73,4 +83,5 @@ export type ProjectUsageResponse = {
   projects: ProjectUsageEntry[]
   totalTokens: number
   totalCost: number
+  modelBreakdowns: ModelBreakdown[]
 }

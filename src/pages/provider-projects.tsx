@@ -2,7 +2,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProjectUsage, type ProjectTimeRange } from "@/hooks/use-project-usage"
-import type { ProjectUsageEntry } from "@/lib/chart-types"
+import type { ModelBreakdown, ProjectUsageEntry } from "@/lib/chart-types"
 import { cn, formatCountNumber, formatFixedPrecisionNumber } from "@/lib/utils"
 
 interface ProviderProjectsPageProps {
@@ -26,6 +26,74 @@ function formatTokens(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
   if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`
   return formatCountNumber(value)
+}
+
+const MODEL_COLORS = [
+  "bg-foreground/80",
+  "bg-foreground/50",
+  "bg-foreground/30",
+  "bg-foreground/15",
+]
+
+function shortenModelName(name: string): string {
+  return name
+    .replace(/^claude-/, "")
+    .replace(/-\d{8}$/, "")
+}
+
+function ModelBreakdownSection({
+  breakdowns,
+  totalCost,
+  mode,
+}: {
+  breakdowns: ModelBreakdown[]
+  totalCost: number
+  mode: ViewMode
+}) {
+  if (breakdowns.length === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+        Model usage
+      </div>
+
+      {/* Stacked bar */}
+      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted/30">
+        {breakdowns.map((mb, i) => {
+          const pct = totalCost > 0 ? (mb.cost / totalCost) * 100 : 0
+          if (pct < 0.5) return null
+          return (
+            <div
+              key={mb.modelName}
+              className={cn("h-full transition-all", MODEL_COLORS[i % MODEL_COLORS.length])}  
+              style={{ width: `${pct}%` }}
+              title={`${shortenModelName(mb.modelName)}: ${formatCost(mb.cost)}`}
+            />
+          )
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="space-y-1">
+        {breakdowns.map((mb, i) => {
+          const pct = totalCost > 0 ? ((mb.cost / totalCost) * 100).toFixed(1) : "0.0"
+          return (
+            <div key={mb.modelName} className="flex items-center justify-between gap-2 text-[11px]">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <div className={cn("size-2 shrink-0 rounded-sm", MODEL_COLORS[i % MODEL_COLORS.length])} />
+                <span className="truncate text-foreground/80">{shortenModelName(mb.modelName)}</span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 tabular-nums text-muted-foreground">
+                <span>{pct}%</span>
+                <span>{mode === "cost" ? formatCost(mb.cost) : formatTokens(mb.inputTokens + mb.outputTokens + mb.cacheCreationTokens + mb.cacheReadTokens)}</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 function ProjectBar({
@@ -214,6 +282,13 @@ export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) 
             <span className="text-muted-foreground">·</span>
             <span className="text-muted-foreground">{formatTokens(data?.totalTokens ?? 0)} tokens</span>
           </div>
+
+          {/* Model breakdown */}
+          <ModelBreakdownSection
+            breakdowns={data?.modelBreakdowns ?? []}
+            totalCost={data?.totalCost ?? 0}
+            mode={mode}
+          />
 
           {/* Bar chart overview */}
           <div className="space-y-2.5">

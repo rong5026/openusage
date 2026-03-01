@@ -42,6 +42,17 @@ fn parse_provider(id: &str) -> Provider {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct ModelBreakdown {
+    pub model_name: String,
+    pub input_tokens: i64,
+    pub output_tokens: i64,
+    pub cache_creation_tokens: i64,
+    pub cache_read_tokens: i64,
+    pub cost: f64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ProjectUsageEntry {
     pub project_id: String,
     pub display_name: String,
@@ -53,6 +64,7 @@ pub struct ProjectUsageEntry {
     pub cache_read_tokens: i64,
     pub models_used: Vec<String>,
     pub daily: Vec<ProjectDailyEntry>,
+    pub model_breakdowns: Vec<ModelBreakdown>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -74,6 +86,7 @@ pub struct ProjectUsageResponse {
     pub projects: Vec<ProjectUsageEntry>,
     pub total_tokens: i64,
     pub total_cost: f64,
+    pub model_breakdowns: Vec<ModelBreakdown>,
 }
 
 // Raw ccusage JSON shapes
@@ -95,6 +108,24 @@ struct CcusageDailyRaw {
     cache_read_tokens: i64,
     #[serde(default)]
     models_used: Vec<String>,
+    #[serde(default)]
+    model_breakdowns: Vec<CcusageModelBreakdownRaw>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CcusageModelBreakdownRaw {
+    model_name: String,
+    #[serde(default)]
+    input_tokens: i64,
+    #[serde(default)]
+    output_tokens: i64,
+    #[serde(default)]
+    cache_creation_tokens: i64,
+    #[serde(default)]
+    cache_read_tokens: i64,
+    #[serde(default)]
+    cost: f64,
 }
 
 #[derive(Debug, Deserialize)]
@@ -406,6 +437,7 @@ pub fn query_project_usage(
                     let mut cache_creation_tokens: i64 = 0;
                     let mut cache_read_tokens: i64 = 0;
                     let mut all_models: Vec<String> = Vec::new();
+                    let mut model_map: HashMap<String, ModelBreakdown> = HashMap::new();
 
                     let daily: Vec<ProjectDailyEntry> = daily_entries
                         .into_iter()
@@ -421,6 +453,21 @@ pub fn query_project_usage(
                                     all_models.push(m.clone());
                                 }
                             }
+                            for mb in &d.model_breakdowns {
+                                let entry = model_map.entry(mb.model_name.clone()).or_insert(ModelBreakdown {
+                                    model_name: mb.model_name.clone(),
+                                    input_tokens: 0,
+                                    output_tokens: 0,
+                                    cache_creation_tokens: 0,
+                                    cache_read_tokens: 0,
+                                    cost: 0.0,
+                                });
+                                entry.input_tokens += mb.input_tokens;
+                                entry.output_tokens += mb.output_tokens;
+                                entry.cache_creation_tokens += mb.cache_creation_tokens;
+                                entry.cache_read_tokens += mb.cache_read_tokens;
+                                entry.cost += mb.cost;
+                            }
                             ProjectDailyEntry {
                                 date: d.date,
                                 total_tokens: d.total_tokens,
@@ -433,6 +480,9 @@ pub fn query_project_usage(
                         })
                         .collect();
 
+                    let mut model_breakdowns: Vec<ModelBreakdown> = model_map.into_values().collect();
+                    model_breakdowns.sort_by(|a, b| b.cost.partial_cmp(&a.cost).unwrap_or(std::cmp::Ordering::Equal));
+
                     ProjectUsageEntry {
                         project_id,
                         display_name,
@@ -443,6 +493,7 @@ pub fn query_project_usage(
                         cache_creation_tokens,
                         cache_read_tokens,
                         models_used: all_models,
+                        model_breakdowns,
                         daily,
                     }
                 })
@@ -466,11 +517,34 @@ pub fn query_project_usage(
                 .map(|t| t.total_cost)
                 .unwrap_or_else(|| projects.iter().map(|p| p.total_cost).sum());
 
+            // Aggregate model breakdowns across all projects
+            let mut grand_model_map: HashMap<String, ModelBreakdown> = HashMap::new();
+            for project in &projects {
+                for mb in &project.model_breakdowns {
+                    let entry = grand_model_map.entry(mb.model_name.clone()).or_insert(ModelBreakdown {
+                        model_name: mb.model_name.clone(),
+                        input_tokens: 0,
+                        output_tokens: 0,
+                        cache_creation_tokens: 0,
+                        cache_read_tokens: 0,
+                        cost: 0.0,
+                    });
+                    entry.input_tokens += mb.input_tokens;
+                    entry.output_tokens += mb.output_tokens;
+                    entry.cache_creation_tokens += mb.cache_creation_tokens;
+                    entry.cache_read_tokens += mb.cache_read_tokens;
+                    entry.cost += mb.cost;
+                }
+            }
+            let mut grand_model_breakdowns: Vec<ModelBreakdown> = grand_model_map.into_values().collect();
+            grand_model_breakdowns.sort_by(|a, b| b.cost.partial_cmp(&a.cost).unwrap_or(std::cmp::Ordering::Equal));
+
             return Ok(ProjectUsageResponse {
                 provider: provider.to_string(),
                 projects,
                 total_tokens: grand_total_tokens,
                 total_cost: grand_total_cost,
+                model_breakdowns: grand_model_breakdowns,
             });
         }
     }
