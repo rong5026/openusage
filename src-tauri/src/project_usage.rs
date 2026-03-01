@@ -7,6 +7,37 @@ const CCUSAGE_VERSION: &str = "18.0.8";
 const CCUSAGE_TIMEOUT_SECS: u64 = 30;
 const CCUSAGE_POLL_INTERVAL_MS: u64 = 100;
 
+#[derive(Copy, Clone, Debug)]
+enum Provider {
+    Claude,
+    Codex,
+}
+
+struct ProviderConfig {
+    package_name: &'static str,
+    npm_exec_bin: &'static str,
+}
+
+fn provider_config(provider: Provider) -> ProviderConfig {
+    match provider {
+        Provider::Claude => ProviderConfig {
+            package_name: "ccusage",
+            npm_exec_bin: "ccusage",
+        },
+        Provider::Codex => ProviderConfig {
+            package_name: "@ccusage/codex",
+            npm_exec_bin: "ccusage-codex",
+        },
+    }
+}
+
+fn parse_provider(id: &str) -> Provider {
+    match id {
+        "codex" => Provider::Codex,
+        _ => Provider::Claude,
+    }
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]
@@ -185,8 +216,9 @@ fn collect_runners() -> Vec<(RunnerKind, String)> {
     runners
 }
 
-fn build_args(kind: RunnerKind, since: Option<&str>) -> Vec<String> {
-    let package_spec = format!("ccusage@{}", CCUSAGE_VERSION);
+fn build_args(kind: RunnerKind, provider: Provider, since: Option<&str>) -> Vec<String> {
+    let config = provider_config(provider);
+    let package_spec = format!("{}@{}", config.package_name, CCUSAGE_VERSION);
     let mut args: Vec<String> = match kind {
         RunnerKind::Bunx => vec!["--silent".into(), package_spec.clone()],
         RunnerKind::PnpmDlx => vec!["-s".into(), "dlx".into(), package_spec.clone()],
@@ -196,7 +228,7 @@ fn build_args(kind: RunnerKind, since: Option<&str>) -> Vec<String> {
             "--yes".into(),
             format!("--package={package_spec}"),
             "--".into(),
-            "ccusage".into(),
+            config.npm_exec_bin.into(),
         ],
         RunnerKind::Npx => vec!["--yes".into(), package_spec],
     };
@@ -223,9 +255,10 @@ fn build_args(kind: RunnerKind, since: Option<&str>) -> Vec<String> {
 fn run_with_runner(
     kind: RunnerKind,
     program: &str,
+    provider: Provider,
     since: Option<&str>,
 ) -> Option<String> {
-    let args = build_args(kind, since);
+    let args = build_args(kind, provider, since);
     let path = enriched_path();
 
     let mut command = std::process::Command::new(program);
@@ -349,13 +382,14 @@ pub fn query_project_usage(
     provider: &str,
     since: Option<&str>,
 ) -> Result<ProjectUsageResponse, String> {
+    let ccusage_provider = parse_provider(provider);
     let runners = collect_runners();
     if runners.is_empty() {
         return Err("No package runner (bunx/npx/pnpm/yarn) found. Install Node.js or Bun.".into());
     }
 
     for (kind, program) in &runners {
-        if let Some(json_str) = run_with_runner(*kind, program, since) {
+        if let Some(json_str) = run_with_runner(*kind, program, ccusage_provider, since) {
             let parsed: CcusageInstancesOutput = serde_json::from_str(&json_str)
                 .map_err(|e| format!("Failed to parse ccusage output: {}", e))?;
 
