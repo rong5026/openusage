@@ -29,17 +29,7 @@ function formatTokens(value: number): string {
   return formatCountNumber(value)
 }
 
-const CHART_COLORS = [
-  "var(--color-chart-1)",
-  "var(--color-chart-2)",
-  "var(--color-chart-3)",
-  "var(--color-chart-4)",
-  "var(--color-chart-5)",
-]
-
-function chartColor(index: number): string {
-  return CHART_COLORS[index % CHART_COLORS.length]
-}
+const MODEL_OPACITY = [1, 0.7, 0.45, 0.25]
 
 function shortenModelName(name: string): string {
   return name
@@ -72,8 +62,8 @@ function ModelBreakdownSection({
           return (
             <div
               key={mb.modelName}
-              className="h-full transition-all"
-              style={{ width: `${pct}%`, backgroundColor: chartColor(i) }}
+              className="h-full transition-all bg-primary"
+              style={{ width: `${pct}%`, opacity: MODEL_OPACITY[i % MODEL_OPACITY.length] }}
               title={`${shortenModelName(mb.modelName)}: ${formatCost(mb.cost)}`}
             />
           )
@@ -87,7 +77,7 @@ function ModelBreakdownSection({
           return (
             <div key={mb.modelName} className="flex items-center justify-between gap-2 text-[11px]">
               <div className="flex items-center gap-1.5 min-w-0">
-                <div className="size-2 shrink-0 rounded-sm" style={{ backgroundColor: chartColor(i) }} />
+                <div className="size-2 shrink-0 rounded-sm bg-primary" style={{ opacity: MODEL_OPACITY[i % MODEL_OPACITY.length] }} />
                 <span className="truncate text-foreground/80">{shortenModelName(mb.modelName)}</span>
               </div>
               <div className="flex items-center gap-2 shrink-0 tabular-nums text-muted-foreground">
@@ -190,7 +180,7 @@ function ProjectBar({
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
         <div
-          className="h-full rounded-full bg-foreground/70 transition-all duration-300"
+          className="h-full rounded-full bg-primary transition-all duration-300"
           style={{ width: `${Math.max(width, 0.5)}%` }}
         />
       </div>
@@ -205,7 +195,7 @@ function ProjectBar({
   )
 }
 
-function ProjectDetail({ project, colorIndex }: { project: ProjectUsageEntry; colorIndex: number }) {
+function ProjectDetail({ project }: { project: ProjectUsageEntry }) {
   const aliases = useProjectAliasStore((s) => s.aliases)
   const displayName = aliases[project.projectId] || project.displayName
   const [expanded, setExpanded] = useState(false)
@@ -219,7 +209,7 @@ function ProjectDetail({ project, colorIndex }: { project: ProjectUsageEntry; co
       >
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <div className="size-2 shrink-0 rounded-full" style={{ backgroundColor: chartColor(colorIndex) }} />
+            <div className="size-2 shrink-0 rounded-full bg-primary" />
             <div className="truncate text-xs font-medium text-foreground" title={project.projectId}>
               {displayName}
             </div>
@@ -385,11 +375,10 @@ export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) 
             <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
               Daily breakdown
             </div>
-            {projects.map((project, i) => (
+            {projects.map((project) => (
               <ProjectDetail
                 key={project.projectId}
                 project={project}
-                colorIndex={i}
               />
             ))}
           </div>
