@@ -6,7 +6,7 @@ import { ProviderProjectsPage } from "@/pages/provider-projects"
 import type { PluginDisplayState } from "@/lib/plugin-types"
 import type { DisplayMode, ResetTimerDisplayMode } from "@/lib/settings"
 
-const CCUSAGE_PROVIDERS = new Set(["claude", "codex"])
+const PROJECT_PROVIDERS = new Set(["claude"])
 
 type TabId = "overview" | "analytics" | "projects"
 
@@ -28,7 +28,7 @@ export function ProviderDetailPage({
   const [activeTab, setActiveTab] = useState<TabId>("overview")
 
   const showProjectsTab = useMemo(
-    () => plugin != null && CCUSAGE_PROVIDERS.has(plugin.meta.id),
+    () => plugin != null && PROJECT_PROVIDERS.has(plugin.meta.id),
     [plugin],
   )
 
