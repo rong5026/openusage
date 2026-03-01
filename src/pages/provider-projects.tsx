@@ -171,10 +171,12 @@ function ProjectBar({
   project,
   maxValue,
   mode,
+  colorIndex,
 }: {
   project: ProjectUsageEntry
   maxValue: number
   mode: ViewMode
+  colorIndex: number
 }) {
   const value = mode === "cost" ? project.totalCost : project.totalTokens
   const width = maxValue > 0 ? (value / maxValue) * 100 : 0
@@ -190,8 +192,8 @@ function ProjectBar({
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
         <div
-          className="h-full rounded-full bg-primary transition-all duration-300"
-          style={{ width: `${Math.max(width, 0.5)}%` }}
+          className="h-full rounded-full transition-all duration-300"
+          style={{ width: `${Math.max(width, 0.5)}%`, backgroundColor: chartColor(colorIndex) }}
         />
       </div>
       <div className="flex gap-2 text-[10px] text-muted-foreground">
@@ -205,7 +207,7 @@ function ProjectBar({
   )
 }
 
-function ProjectDetail({ project }: { project: ProjectUsageEntry }) {
+function ProjectDetail({ project, colorIndex }: { project: ProjectUsageEntry; colorIndex: number }) {
   const aliases = useProjectAliasStore((s) => s.aliases)
   const displayName = aliases[project.projectId] || project.displayName
   const [expanded, setExpanded] = useState(false)
@@ -219,7 +221,7 @@ function ProjectDetail({ project }: { project: ProjectUsageEntry }) {
       >
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <div className="size-2 shrink-0 rounded-full bg-primary" />
+            <div className="size-2 shrink-0 rounded-full" style={{ backgroundColor: chartColor(colorIndex) }} />
             <div className="truncate text-xs font-medium text-foreground" title={project.projectId}>
               {displayName}
             </div>
@@ -370,12 +372,13 @@ export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) 
 
           {/* Bar chart overview */}
           <div className="space-y-2.5">
-            {projects.map((project) => (
+            {projects.map((project, i) => (
               <ProjectBar
                 key={project.projectId}
                 project={project}
                 maxValue={maxValue}
                 mode={mode}
+                colorIndex={i}
               />
             ))}
           </div>
@@ -385,10 +388,11 @@ export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) 
             <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
               Daily breakdown
             </div>
-            {projects.map((project) => (
+            {projects.map((project, i) => (
               <ProjectDetail
                 key={project.projectId}
                 project={project}
+                colorIndex={i}
               />
             ))}
           </div>
