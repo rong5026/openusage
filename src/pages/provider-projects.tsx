@@ -171,12 +171,10 @@ function ProjectBar({
   project,
   maxValue,
   mode,
-  colorIndex,
 }: {
   project: ProjectUsageEntry
   maxValue: number
   mode: ViewMode
-  colorIndex: number
 }) {
   const value = mode === "cost" ? project.totalCost : project.totalTokens
   const width = maxValue > 0 ? (value / maxValue) * 100 : 0
@@ -192,8 +190,8 @@ function ProjectBar({
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50">
         <div
-          className="h-full rounded-full transition-all duration-300"
-          style={{ width: `${Math.max(width, 0.5)}%`, backgroundColor: chartColor(colorIndex) }}
+          className="h-full rounded-full bg-foreground/70 transition-all duration-300"
+          style={{ width: `${Math.max(width, 0.5)}%` }}
         />
       </div>
       <div className="flex gap-2 text-[10px] text-muted-foreground">
@@ -372,13 +370,12 @@ export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) 
 
           {/* Bar chart overview */}
           <div className="space-y-2.5">
-            {projects.map((project, i) => (
+            {projects.map((project) => (
               <ProjectBar
                 key={project.projectId}
                 project={project}
                 maxValue={maxValue}
                 mode={mode}
-                colorIndex={i}
               />
             ))}
           </div>
