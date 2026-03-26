@@ -84,6 +84,12 @@ export function SvgAreaChart({
     [plotH, yMax],
   )
 
+  // Y-axis ticks
+  const yTicks: number[] = []
+  for (let i = 0; i <= Y_TICK_COUNT; i++) {
+    yTicks.push((yMax / Y_TICK_COUNT) * i)
+  }
+
   // Build line path
   const linePath =
     data.length > 0
@@ -95,12 +101,6 @@ export function SvgAreaChart({
     data.length > 0
       ? `${linePath} L${scaleX(data[data.length - 1].x).toFixed(2)},${scaleY(0).toFixed(2)} L${scaleX(data[0].x).toFixed(2)},${scaleY(0).toFixed(2)} Z`
       : ""
-
-  // Y-axis ticks
-  const yTicks: number[] = []
-  for (let i = 0; i <= Y_TICK_COUNT; i++) {
-    yTicks.push((yMax / Y_TICK_COUNT) * i)
-  }
 
   // X-axis ticks
   const xTicks: number[] = []

@@ -79,15 +79,15 @@ export function SvgBarChart({
     [plotH, yMax],
   )
 
-  const barCount = data.length || 1
-  const slotWidth = plotW / barCount
-  const barWidth = Math.max(slotWidth * (1 - BAR_GAP_RATIO), 1)
-
   // Y-axis ticks
   const yTicks: number[] = []
   for (let i = 0; i <= Y_TICK_COUNT; i++) {
     yTicks.push((yMax / Y_TICK_COUNT) * i)
   }
+
+  const barCount = data.length || 1
+  const slotWidth = plotW / barCount
+  const barWidth = Math.max(slotWidth * (1 - BAR_GAP_RATIO), 1)
 
   // X-axis label indices (evenly spaced subset)
   const xLabelIndices: number[] = []

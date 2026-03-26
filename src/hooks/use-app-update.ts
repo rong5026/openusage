@@ -26,6 +26,7 @@ export function useAppUpdate(): UseAppUpdateReturn {
   const mountedRef = useRef(true)
   const inFlightRef = useRef({ checking: false, downloading: false, installing: false })
   const upToDateTimeoutRef = useRef<number | null>(null)
+  const disabledRef = useRef(false)
 
   const setStatus = useCallback((next: UpdateStatus) => {
     statusRef.current = next
@@ -34,7 +35,7 @@ export function useAppUpdate(): UseAppUpdateReturn {
   }, [])
 
   const checkForUpdates = useCallback(async () => {
-    if (!isTauri()) return
+    if (!isTauri() || disabledRef.current) return
     if (inFlightRef.current.checking || inFlightRef.current.downloading || inFlightRef.current.installing) return
     if (statusRef.current.status === "ready") return
 
@@ -96,8 +97,9 @@ export function useAppUpdate(): UseAppUpdateReturn {
     } catch (err) {
       inFlightRef.current.checking = false
       if (!mountedRef.current) return
-      console.error("Update check failed:", err)
-      setStatus({ status: "error", message: "Update check failed" })
+      // If the updater is not configured (no endpoints), stay idle and stop retrying
+      disabledRef.current = true
+      setStatus({ status: "idle" })
     }
   }, [setStatus])
 

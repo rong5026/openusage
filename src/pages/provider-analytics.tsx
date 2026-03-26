@@ -132,7 +132,11 @@ export function ProviderAnalyticsPage({ providerId }: ProviderAnalyticsPageProps
     }
 
     if (chartMode === "tokens") {
-      return (value: number) => formatCountNumber(value)
+      return (value: number) => {
+        if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`
+        if (value >= 1_000) return `${(value / 1_000).toFixed(1)}K`
+        return formatCountNumber(value)
+      }
     }
 
     return (value: number) => `$${formatFixedPrecisionNumber(value)}`

@@ -154,12 +154,12 @@ describe("useAppUpdate", () => {
     vi.useRealTimers()
   })
 
-  it("transitions to error when check throws", async () => {
+  it("stays idle when check throws (updater unavailable)", async () => {
     checkMock.mockRejectedValue(new Error("network error"))
     const { result } = renderHook(() => useAppUpdate())
     await act(() => Promise.resolve())
     await act(() => Promise.resolve())
-    expect(result.current.updateStatus).toEqual({ status: "error", message: "Update check failed" })
+    expect(result.current.updateStatus).toEqual({ status: "idle" })
   })
 
   it("reports indeterminate progress when content length is unknown", async () => {
