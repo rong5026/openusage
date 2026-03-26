@@ -1,110 +1,86 @@
-# Track all your AI coding subscriptions in one place
+# AI 코딩 구독 사용량을 한눈에 확인하세요
 
-See your usage at a glance from your menu bar. No digging through dashboards.
+메뉴바에서 사용량을 바로 확인할 수 있습니다. 대시보드를 뒤질 필요 없습니다.
+
+> 이 프로젝트는 [robinebers/openusage](https://github.com/robinebers/openusage)의 개인 포크입니다.
 
 ![OpenUsage Screenshot](screenshot.png)
 
-## Download
+## 다운로드
 
-[**Download the latest release**](https://github.com/robinebers/openusage/releases/latest) (macOS, Apple Silicon & Intel)
+[**최신 릴리스 다운로드**](https://github.com/rong5026/openusage/releases/latest) (macOS, Apple Silicon)
 
-The app auto-updates. Install once and you're set.
+## 주요 기능
 
-## What It Does
+OpenUsage는 메뉴바에 상주하며 AI 코딩 구독 사용량을 표시합니다. 프로그레스 바, 뱃지, 명확한 레이블로 한눈에 파악할 수 있습니다.
 
-OpenUsage lives in your menu bar and shows you how much of your AI coding subscriptions you've used. Progress bars, badges, and clear labels. No mental math required.
+- **한눈에 확인.** 모든 AI 도구를 하나의 패널에서.
+- **항상 최신 상태.** 설정한 주기에 따라 자동 새로고침.
+- **글로벌 단축키.** 어디서든 커스텀 단축키로 패널 토글.
+- **가벼움.** 즉시 열리고, 방해하지 않음.
+- **플러그인 기반.** 앱 업데이트 없이 새 프로바이더 추가 가능.
 
-- **One glance.** All your AI tools, one panel.
-- **Always up-to-date.** Refreshes automatically on a schedule you pick.
-- **Global shortcut.** Toggle the panel from anywhere with a customizable keyboard shortcut.
-- **Lightweight.** Opens instantly, stays out of your way.
-- **Plugin-based.** New providers get added without updating the whole app.
+## 지원 프로바이더
 
-## Supported Providers
+- [**Amp**](docs/providers/amp.md) / 무료 티어, 보너스, 크레딧
+- [**Antigravity**](docs/providers/antigravity.md) / 전체 모델
+- [**Claude**](docs/providers/claude.md) / 세션, 주간, 추가 사용량, 로컬 토큰 사용량 (ccusage)
+- [**Codex**](docs/providers/codex.md) / 세션, 주간, 리뷰, 크레딧
+- [**Copilot**](docs/providers/copilot.md) / 프리미엄, 채팅, 완성
+- [**Cursor**](docs/providers/cursor.md) / 크레딧, 총 사용량, 자동 사용량, API 사용량, 온디맨드, CLI 인증
+- [**Factory / Droid**](docs/providers/factory.md) / 표준, 프리미엄 토큰
+- [**Gemini**](docs/providers/gemini.md) / Pro, Flash, Workspace/무료/유료 티어
+- [**JetBrains AI Assistant**](docs/providers/jetbrains-ai-assistant.md) / 할당량, 잔여량
+- [**Kimi Code**](docs/providers/kimi.md) / 세션, 주간
+- [**MiniMax**](docs/providers/minimax.md) / 코딩 플랜 세션
+- [**OpenCode Go**](docs/providers/opencode-go.md) / 5시간, 주간, 월간 지출 한도
+- [**Windsurf**](docs/providers/windsurf.md) / 프롬프트 크레딧, 플렉스 크레딧
+- [**Z.ai**](docs/providers/zai.md) / 세션, 주간, 웹 검색
 
-- [**Amp**](docs/providers/amp.md) / free tier, bonus, credits
-- [**Antigravity**](docs/providers/antigravity.md) / all models
-- [**Claude**](docs/providers/claude.md) / session, weekly, extra usage, local token usage (ccusage)
-- [**Codex**](docs/providers/codex.md) / session, weekly, reviews, credits
-- [**Copilot**](docs/providers/copilot.md) / premium, chat, completions
-- [**Cursor**](docs/providers/cursor.md) / credits, total usage, auto usage, API usage, on-demand, CLI auth
-- [**Factory / Droid**](docs/providers/factory.md) / standard, premium tokens
-- [**Gemini**](docs/providers/gemini.md) / pro, flash, workspace/free/paid tier
-- [**JetBrains AI Assistant**](docs/providers/jetbrains-ai-assistant.md) / quota, remaining
-- [**Kimi Code**](docs/providers/kimi.md) / session, weekly
-- [**MiniMax**](docs/providers/minimax.md) / coding plan session
-- [**OpenCode Go**](docs/providers/opencode-go.md) / 5h, weekly, monthly spend limits
-- [**Windsurf**](docs/providers/windsurf.md) / prompt credits, flex credits
-- [**Z.ai**](docs/providers/zai.md) / session, weekly, web searches
+## 포크 변경 내역
 
-### Maybe Soon
+원본 [robinebers/openusage](https://github.com/robinebers/openusage) 대비 변경 사항:
 
-- [Vercel AI Gateway](https://github.com/robinebers/openusage/issues/18)
+### 기능 추가
+- **프로젝트 별칭** — 프로젝트에 커스텀 표시 이름 설정 가능
+- **분석 세분화** — 분 단위 분석에 5분/10분/30분 간격 옵션 추가
 
-Community contributions welcome.
-Want a provider that's not listed? [Open an issue.](https://github.com/robinebers/openusage/issues/new)
+### UI/스타일 개선
+- **분석 드롭다운** — 분 단위 옵션을 드롭다운으로 변경하여 가로 스크롤 방지
+- **프로젝트 색상 통일** — 바, 모델 분석, Daily breakdown 색상을 차트 컬러 팔레트로 통일
 
-## Open Source, Community Driven
+### 버그 수정
+- **차트 Y축 오버플로** — 큰 토큰 값을 K/M 단위로 축약 표시 (예: 50M, 10K)
+- **자동 업데이터 제거** — 실행 시 크래시 및 원본 저장소 업데이트 알림 방지
 
-OpenUsage is built by its users. Hundreds of people use it daily, and the project grows through community contributions: new providers, bug fixes, and ideas.
+## 크레딧
 
-I maintain the project as a guide and quality gatekeeper, but this is your app as much as mine. If something is missing or broken, the best way to get it fixed is to contribute by opening an issue, or submitting a PR.
+[CodexBar](https://github.com/steipete/CodexBar) by [@steipete](https://github.com/steipete)에서 영감을 받았습니다.
 
-Plugins are currently bundled as we build our the API, but soon will be made flexible so you can build and load their own.
-
-### How to Contribute
-
-- **Add a provider.** Each one is just a plugin. See the [Plugin API](docs/plugins/api.md).
-- **Fix a bug.** PRs welcome. Provide before/after screenshots.
-- **Request a feature.** [Open an issue](https://github.com/robinebers/openusage/issues/new) and make your case.
-
-Keep it simple. No feature creep, no AI-generated commit messages, test your changes.
-
-## Built Entirely with AI
-
-Not a single line of code in this project was read or written by hand. 100% AI-generated, AI-reviewed, AI-shipped — using [Cursor](https://cursor.com), [Claude Code](https://docs.anthropic.com/en/docs/claude-code), and [Codex CLI](https://github.com/openai/codex).
-
-OpenUsage is a real-world example of what I teach in the [AI Builder's Blueprint](https://itsbyrob.in/EBDqgJ6) — a proven process for building and shipping software with AI, no coding background required.
-
-## Sponsors
-
-OpenUsage is supported by our sponsors. Become a sponsor to get your logo here and on [openusage.ai](https://openusage.ai).
-
-[Become a Sponsor](https://github.com/sponsors/robinebers)
-
-<!-- Add sponsor logos here -->
-
-## Credits
-
-Inspired by [CodexBar](https://github.com/steipete/CodexBar) by [@steipete](https://github.com/steipete). Same idea, very different approach.
-
-## Fork Changes
-
-This is a personal fork of [robinebers/openusage](https://github.com/robinebers/openusage). The following changes have been made on top of upstream:
-
-### Features
-- **Project aliases** — Set custom display names for projects (`b8e96e6`)
-- **Analytics granularity** — Added 5m/10m/30m interval options for minute-level analytics (`f750251`)
-
-### UI/Style
-- **Analytics dropdown** — Minute-level options moved to a dropdown to prevent horizontal scroll (`c6919a2`)
-- **Project colors** — Bars, model analysis, and daily breakdown use the chart color palette consistently (`c0c067a`, `e30e19d`, `8884b91`, `d7951a7`, `fbabaa8`)
-
-### Fixes
-- **Chart Y-axis overflow** — Large token values now display with K/M units (e.g. 50M, 10K) instead of full numbers (`d4beec7`)
-- **Auto-updater removal** — Disabled auto-updater to prevent crash on launch and unwanted update prompts from upstream releases (`d6c4ce5`, `d4beec7`)
-
-## License
+## 라이선스
 
 [MIT](LICENSE)
 
 ---
 
 <details>
-<summary><strong>Build from source</strong></summary>
+<summary><strong>소스에서 빌드</strong></summary>
 
-> **Warning**: The `main` branch may not be stable. It is merged directly without staging, so users are advised to use tagged versions for stable builds. Tagged versions are fully tested while `main` may contain unreleased features.
+> **주의**: `main` 브랜치는 안정적이지 않을 수 있습니다. 스테이징 없이 직접 머지되므로, 안정적인 빌드를 원하면 태그된 버전을 사용하세요.
 
-### Stack
+### 기술 스택
 
-...
+- **프론트엔드**: React + TypeScript + Tailwind CSS v4
+- **백엔드**: Rust (Tauri v2)
+- **플러그인 런타임**: QuickJS 샌드박스
+
+### 빌드 명령어
+
+```bash
+bun install                  # 의존성 설치
+bun run tauri dev            # 개발 모드 실행
+bun run tauri build          # 프로덕션 빌드
+bun run test                 # 테스트 실행
+```
+
+</details>
