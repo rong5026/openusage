@@ -1,5 +1,85 @@
 # Changelog
 
+## 0.6.11
+
+### New Features
+- Add in-app changelog ([#309](https://github.com/robinebers/openusage/pull/309)) by @hearsilent
+- Add drag-to-reorder plugin icons in sidebar by @hearsilent
+
+### Bug Fixes
+- Refresh Windsurf quota cloud plugin ([#313](https://github.com/robinebers/openusage/pull/313)) by @robinebers
+- Send real app version to credits API by @robinebers
+- Fix reset tooltips to mirror display mode ([#297](https://github.com/robinebers/openusage/pull/297)) by @robinebers
+- Preserve leading disabled plugin on reorder by @hearsilent
+- Preserve disabled plugins when reordering by @hearsilent
+- Fix test issue by @hearsilent
+
+### Chores
+- Update bun.lock by @robinebers
+- Bump jsdom from 28.1.0 to 29.0.1 ([#312](https://github.com/robinebers/openusage/pull/312)) by @dependabot
+- Bump tauri-nspanel in /src-tauri ([#311](https://github.com/robinebers/openusage/pull/311)) by @dependabot
+- Update AGENTS.md to version 0.27 by @robinebers
+- Update lucide-react lockfile by @robinebers
+- Use next plist path in cloud mocks by @robinebers
+
+---
+
+### Changelog
+
+**Full Changelog**: [v0.6.10...v0.6.11](https://github.com/robinebers/openusage/compare/v0.6.10...v0.6.11)
+
+- [f5edf2a](https://github.com/robinebers/openusage/commit/f5edf2a) update bun.lock by @robinebers
+- [3a66f32](https://github.com/robinebers/openusage/commit/3a66f32) chore(deps-dev): bump jsdom from 28.1.0 to 29.0.1 (#312) by @dependabot
+- [0ba68d8](https://github.com/robinebers/openusage/commit/0ba68d8) chore(deps): bump tauri-nspanel in /src-tauri (#311) by @dependabot
+- [11ce2d5](https://github.com/robinebers/openusage/commit/11ce2d5) fix: refresh Windsurf quota cloud plugin (#313) by @robinebers
+- [0bfcaa3](https://github.com/robinebers/openusage/commit/0bfcaa3) feat: in-app changelog (#309) by @hearsilent
+- [73fe349](https://github.com/robinebers/openusage/commit/73fe349) Update AGENTS.md to version 0.27 by @robinebers
+- [459647c](https://github.com/robinebers/openusage/commit/459647c) build: update lucide-react lockfile by @robinebers
+- [086ad7d](https://github.com/robinebers/openusage/commit/086ad7d) test(windsurf): use next plist path in cloud mocks by @robinebers
+- [0c716fb](https://github.com/robinebers/openusage/commit/0c716fb) fix(windsurf): send real app version to credits API by @robinebers
+- [0766afc](https://github.com/robinebers/openusage/commit/0766afc) Fix reset tooltips to mirror display mode (#297) by @robinebers
+- [a71a4c1](https://github.com/robinebers/openusage/commit/a71a4c1) fix: preserve leading disabled plugin on reorder by @hearsilent
+- [c84ba87](https://github.com/robinebers/openusage/commit/c84ba87) fix: preserve disabled plugins when reordering by @hearsilent
+- [7ac86fb](https://github.com/robinebers/openusage/commit/7ac86fb) fix: test issue by @hearsilent
+- [b1d290d](https://github.com/robinebers/openusage/commit/b1d290d) feat: add drag-to-reorder plugin icons in sidebar by @hearsilent
+
+## 0.6.10
+
+### New Features
+- Add OpenCode Go plugin with tracking and limits ([#270](https://github.com/robinebers/openusage/pull/270)) by @praveenjuge
+- Show Max 5x/20x tier in plan badge (claude) ([#284](https://github.com/robinebers/openusage/pull/284)) by @DiogoDuart3
+
+### Bug Fixes
+- Bump ccusage to v18.0.10 ([#295](https://github.com/robinebers/openusage/pull/295)) by @robinebers
+- Count daily active usage more accurately ([#294](https://github.com/robinebers/openusage/pull/294)) by @robinebers
+- Accept percent-only free usage payloads (cursor) ([#269](https://github.com/robinebers/openusage/pull/269)) by @davidarny
+- Prefer auth.encrypted over auth.json (factory) ([#268](https://github.com/robinebers/openusage/pull/268)) by @sudoanmol
+
+### Chores
+- Bump lucide-react from 0.575.0 to 0.577.0 ([#276](https://github.com/robinebers/openusage/pull/276)) by @dependabot
+- Bump @vitejs/plugin-react from 5.2.0 to 6.0.1 ([#290](https://github.com/robinebers/openusage/pull/290)) by @dependabot
+- Bump uuid from 1.21.0 to 1.22.0 in /src-tauri ([#275](https://github.com/robinebers/openusage/pull/275)) by @dependabot
+- Bump vite from 7.3.1 to 8.0.0 ([#289](https://github.com/robinebers/openusage/pull/289)) by @dependabot
+
+---
+
+### Changelog
+
+**Full Changelog**: [v0.6.9...v0.6.10](https://github.com/robinebers/openusage/compare/v0.6.9...v0.6.10)
+
+- [50f577f](https://github.com/robinebers/openusage/commit/50f577f) fix(ccusage): bump to v18.0.10 (#295) by @robinebers
+- [78b5270](https://github.com/robinebers/openusage/commit/78b5270) fix(analytics): count daily active usage more accurately (#294) by @robinebers
+- [2aaadf0](https://github.com/robinebers/openusage/commit/2aaadf0) feat(opencode-go): add OpenCode Go plugin with tracking and limits (#270) by @praveenjuge
+- [7bfc51d](https://github.com/robinebers/openusage/commit/7bfc51d) fix(cursor): accept percent-only free usage payloads (#269) by @davidarny
+- [54f7bac](https://github.com/robinebers/openusage/commit/54f7bac) chore(deps): bump lucide-react from 0.575.0 to 0.577.0 (#276) by @dependabot
+- [5a475ab](https://github.com/robinebers/openusage/commit/5a475ab) chore(deps-dev): bump @vitejs/plugin-react from 5.2.0 to 6.0.1 (#290) by @dependabot
+- [3477cdf](https://github.com/robinebers/openusage/commit/3477cdf) chore(deps): bump uuid from 1.21.0 to 1.22.0 in /src-tauri (#275) by @dependabot
+- [b0900bc](https://github.com/robinebers/openusage/commit/b0900bc) chore(deps-dev): bump vite from 7.3.1 to 8.0.0 (#289) by @dependabot
+- [5339e08](https://github.com/robinebers/openusage/commit/5339e08) feat(claude): show Max 5x/20x tier in plan badge (#284) by @DiogoDuart3
+- [a04c8ee](https://github.com/robinebers/openusage/commit/a04c8ee) Merge pull request #268 from sudoanmol/fix/factory-auth-path-order by @sudoanmol
+- [a6c3e30](https://github.com/robinebers/openusage/commit/a6c3e30) test(factory): add regression test for auth.encrypted preference over stale auth.json by @sudoanmol
+- [526d6ca](https://github.com/robinebers/openusage/commit/526d6ca) fix(factory): prefer auth.encrypted over auth.json by @sudoanmol
+
 ## 0.6.8
 
 ### New Features

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { openUrl } from "@tauri-apps/plugin-opener"
 import { ProviderCard } from "@/components/provider-card"
 import { groupLinesByType } from "@/lib/group-lines-by-type"
+import { formatResetTooltipText } from "@/lib/reset-tooltip"
 import { REFRESH_COOLDOWN_MS } from "@/lib/settings"
 import { formatFixedPrecisionNumber } from "@/lib/utils"
 
@@ -31,22 +32,11 @@ vi.mock("@/components/ui/tooltip", () => ({
   TooltipContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }))
 
-function getEnglishOrdinalSuffix(day: number): string {
-  const mod100 = day % 100
-  if (mod100 >= 11 && mod100 <= 13) return "th"
-  const mod10 = day % 10
-  if (mod10 === 1) return "st"
-  if (mod10 === 2) return "nd"
-  if (mod10 === 3) return "rd"
-  return "th"
-}
-
-function formatOrdinalDate(date: Date): string {
-  const monthText = new Intl.DateTimeFormat(undefined, {
+function formatMonthDay(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
     month: "short",
+    day: "numeric",
   }).format(date)
-  const day = date.getDate()
-  return `${monthText} ${day}${getEnglishOrdinalSuffix(day)}`
 }
 
 describe("ProviderCard", () => {
@@ -260,7 +250,38 @@ describe("ProviderCard", () => {
       />
     )
     expect(screen.getByText("Resets in 1h 5m")).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        formatResetTooltipText({
+          nowMs: now.getTime(),
+          resetsAtIso: "2026-02-02T01:05:00.000Z",
+          visibleMode: "relative",
+        })!
+      )
+    ).toBeInTheDocument()
     vi.useRealTimers()
+  })
+
+  it("does not render reset tooltip for invalid reset timestamps", () => {
+    render(
+      <ProviderCard
+        name="Resets"
+        displayMode="used"
+        lines={[
+          {
+            type: "progress",
+            label: "Invalid",
+            used: 10,
+            limit: 100,
+            format: { kind: "percent" },
+            resetsAt: "not-a-date",
+          },
+        ]}
+      />
+    )
+
+    expect(screen.getByText("100% cap")).toBeInTheDocument()
+    expect(screen.queryByText(/^Next reset:/)).not.toBeInTheDocument()
   })
 
   it("shows 'Resets soon' when reset is under 5 minutes away", () => {
@@ -331,7 +352,7 @@ describe("ProviderCard", () => {
         ]}
       />
     )
-    expect(screen.getByText("Resets soon")).toBeInTheDocument()
+    expect(screen.getAllByText("Resets soon")).toHaveLength(2)
     vi.useRealTimers()
   })
 
@@ -356,7 +377,7 @@ describe("ProviderCard", () => {
         ]}
       />
     )
-    expect(screen.getByText("Resets soon")).toBeInTheDocument()
+    expect(screen.getAllByText("Resets soon")).toHaveLength(2)
     vi.useRealTimers()
   })
 
@@ -386,6 +407,15 @@ describe("ProviderCard", () => {
     )
     const resetButton = screen.getByRole("button", { name: /^Resets today at / })
     expect(resetButton).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        formatResetTooltipText({
+          nowMs: now.getTime(),
+          resetsAtIso: resetsAt,
+          visibleMode: "absolute",
+        })!
+      )
+    ).toBeInTheDocument()
     fireEvent.click(resetButton)
     expect(onToggle).toHaveBeenCalledTimes(1)
     vi.useRealTimers()
@@ -422,7 +452,7 @@ describe("ProviderCard", () => {
     const now = new Date(2026, 1, 2, 10, 0, 0)
     const resetsAt = new Date(2026, 1, 5, 16, 0, 0)
     vi.setSystemTime(now)
-    const dateText = formatOrdinalDate(resetsAt)
+    const dateText = formatMonthDay(resetsAt)
     render(
       <ProviderCard
         name="Resets"
@@ -451,7 +481,7 @@ describe("ProviderCard", () => {
     const now = new Date(2026, 1, 2, 10, 0, 0)
     const resetsAt = new Date(2026, 1, 20, 16, 0, 0)
     vi.setSystemTime(now)
-    const dateText = formatOrdinalDate(resetsAt)
+    const dateText = formatMonthDay(resetsAt)
     render(
       <ProviderCard
         name="Resets"

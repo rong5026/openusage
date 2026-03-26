@@ -9,6 +9,7 @@
   const REFRESH_URL = BASE_URL + "/oauth/token"
   const CREDITS_URL = BASE_URL + "/aiserver.v1.DashboardService/GetCreditGrantsBalance"
   const REST_USAGE_URL = "https://cursor.com/api/usage"
+  const STRIPE_URL = "https://cursor.com/api/auth/stripe"
   const CLIENT_ID = "KbZUR41cY7W6zRSdpSUJ7I7mLYBKOCmB"
   const REFRESH_BUFFER_MS = 5 * 60 * 1000 // refresh 5 minutes before expiration
   const LOGIN_HINT = "Sign in via Cursor app or run `agent login`."
@@ -246,6 +247,37 @@
     }
   }
 
+  function fetchStripeBalance(ctx, accessToken) {
+    var session = buildSessionToken(ctx, accessToken)
+    if (!session) {
+      ctx.host.log.warn("stripe: cannot build session token")
+      return null
+    }
+    try {
+      var resp = ctx.util.request({
+        method: "GET",
+        url: STRIPE_URL,
+        headers: {
+          Cookie: "WorkosCursorSessionToken=" + session.sessionToken,
+        },
+        timeoutMs: 10000,
+      })
+      if (resp.status < 200 || resp.status >= 300) {
+        ctx.host.log.warn("stripe balance returned status=" + resp.status)
+        return null
+      }
+      var stripe = ctx.util.tryParseJson(resp.bodyText)
+      if (!stripe) return null
+      var customerBalanceCents = Number(stripe.customerBalance)
+      if (!Number.isFinite(customerBalanceCents)) return null
+      // Stripe stores customer credits as a negative balance.
+      return customerBalanceCents < 0 ? Math.abs(customerBalanceCents) : 0
+    } catch (e) {
+      ctx.host.log.warn("stripe balance fetch failed: " + String(e))
+      return null
+    }
+  }
+
   function buildRequestBasedResult(ctx, accessToken, planName, unavailableMessage) {
     var requestUsage = fetchRequestBasedUsage(ctx, accessToken)
     var lines = []
@@ -456,6 +488,8 @@
       ctx.host.log.warn("credit grants fetch failed: " + String(e))
     }
 
+    const stripeBalanceCents = fetchStripeBalance(ctx, accessToken) || 0
+
     let plan = null
     if (planName) {
       const planLabel = ctx.fmt.planLabel(planName)
@@ -468,39 +502,22 @@
     const pu = usage.planUsage
 
     // Credits first (if available) - highest priority primary metric
-    if (creditGrants && creditGrants.hasCreditGrants === true) {
-      const total = parseInt(creditGrants.totalCents, 10)
-      const used = parseInt(creditGrants.usedCents, 10)
-      if (total > 0 && !isNaN(total) && !isNaN(used)) {
-        lines.push(ctx.line.progress({
-          label: "Credits",
-          used: ctx.fmt.dollars(used),
-          limit: ctx.fmt.dollars(total),
-          format: { kind: "dollars" },
-        }))
-      }
-    }
+    const hasCreditGrants = creditGrants && creditGrants.hasCreditGrants === true
+    const grantTotalCents = hasCreditGrants ? parseInt(creditGrants.totalCents, 10) : 0
+    const grantUsedCents = hasCreditGrants ? parseInt(creditGrants.usedCents, 10) : 0
+    const hasValidGrantData = hasCreditGrants &&
+      grantTotalCents > 0 &&
+      !isNaN(grantTotalCents) &&
+      !isNaN(grantUsedCents)
+    const combinedTotalCents = (hasValidGrantData ? grantTotalCents : 0) + stripeBalanceCents
 
-    // Total usage (always present) - fallback primary metric
-    if (typeof pu.limit !== "number") {
-      throw "Total usage limit missing from API response."
-    }
-    const planUsed = typeof pu.totalSpend === "number"
-      ? pu.totalSpend
-      : pu.limit - (pu.remaining ?? 0)
-    const computedPercentUsed = pu.limit > 0
-      ? (planUsed / pu.limit) * 100
-      : 0
-    const totalUsagePercent = Number.isFinite(pu.totalPercentUsed)
-      ? pu.totalPercentUsed
-      : computedPercentUsed
-
-    // Calculate billing cycle period duration
-    var billingPeriodMs = 30 * 24 * 60 * 60 * 1000 // 30 days default
-    var cycleStart = Number(usage.billingCycleStart)
-    var cycleEnd = Number(usage.billingCycleEnd)
-    if (Number.isFinite(cycleStart) && Number.isFinite(cycleEnd) && cycleEnd > cycleStart) {
-      billingPeriodMs = cycleEnd - cycleStart // already in ms
+    if (combinedTotalCents > 0) {
+      lines.push(ctx.line.progress({
+        label: "Credits",
+        used: ctx.fmt.dollars(hasValidGrantData ? grantUsedCents : 0),
+        limit: ctx.fmt.dollars(combinedTotalCents),
+        format: { kind: "dollars" },
+      }))
     }
 
     const su = usage.spendLimitUsage
@@ -509,6 +526,38 @@
       (su && su.limitType === "team") ||
       (su && typeof su.pooledLimit === "number")
     )
+    const hasFiniteLimit = typeof pu.limit === "number" && Number.isFinite(pu.limit)
+    const hasFinitePercent = Number.isFinite(pu.totalPercentUsed)
+
+    // Free/individual plans can be percent-only; team rendering still needs dollars.
+    if (isTeamAccount && !hasFiniteLimit) {
+      throw "Total usage limit missing from API response."
+    }
+    if (!isTeamAccount && !hasFiniteLimit && !hasFinitePercent) {
+      throw "Total usage limit missing from API response."
+    }
+
+    const planUsed = hasFiniteLimit
+      ? (typeof pu.totalSpend === "number" ? pu.totalSpend : pu.limit - (pu.remaining ?? 0))
+      : null
+    const computedPercentUsed = hasFiniteLimit
+      ? (pu.limit > 0 ? (planUsed / pu.limit) * 100 : 0)
+      : null
+    const totalUsagePercent = hasFinitePercent
+      ? pu.totalPercentUsed
+      : computedPercentUsed
+
+    if (!isTeamAccount && !hasFiniteLimit && hasFinitePercent) {
+      ctx.host.log.info("total usage limit missing; using totalPercentUsed for individual account")
+    }
+
+    // Calculate billing cycle period duration
+    var billingPeriodMs = 30 * 24 * 60 * 60 * 1000 // 30 days default
+    var cycleStart = Number(usage.billingCycleStart)
+    var cycleEnd = Number(usage.billingCycleEnd)
+    if (Number.isFinite(cycleStart) && Number.isFinite(cycleEnd) && cycleEnd > cycleStart) {
+      billingPeriodMs = cycleEnd - cycleStart // already in ms
+    }
 
     if (isTeamAccount) {
       lines.push(ctx.line.progress({
