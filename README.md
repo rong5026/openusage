@@ -78,6 +78,22 @@ OpenUsage is supported by our sponsors. Become a sponsor to get your logo here a
 
 Inspired by [CodexBar](https://github.com/steipete/CodexBar) by [@steipete](https://github.com/steipete). Same idea, very different approach.
 
+## Fork Changes
+
+This is a personal fork of [robinebers/openusage](https://github.com/robinebers/openusage). The following changes have been made on top of upstream:
+
+### Features
+- **Project aliases** — Set custom display names for projects (`b8e96e6`)
+- **Analytics granularity** — Added 5m/10m/30m interval options for minute-level analytics (`f750251`)
+
+### UI/Style
+- **Analytics dropdown** — Minute-level options moved to a dropdown to prevent horizontal scroll (`c6919a2`)
+- **Project colors** — Bars, model analysis, and daily breakdown use the chart color palette consistently (`c0c067a`, `e30e19d`, `8884b91`, `d7951a7`, `fbabaa8`)
+
+### Fixes
+- **Chart Y-axis overflow** — Large token values now display with K/M units (e.g. 50M, 10K) instead of full numbers (`d4beec7`)
+- **Auto-updater removal** — Disabled auto-updater to prevent crash on launch and unwanted update prompts from upstream releases (`d6c4ce5`, `d4beec7`)
+
 ## License
 
 [MIT](LICENSE)
