@@ -2,10 +2,44 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::ffi::{OsStr, OsString};
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use std::time::Instant;
 
 const CCUSAGE_VERSION: &str = "18.0.8";
 const CCUSAGE_TIMEOUT_SECS: u64 = 30;
 const CCUSAGE_POLL_INTERVAL_MS: u64 = 100;
+const CACHE_TTL_SECS: u64 = 300; // 5 minutes
+
+// ── Cache ─────────────────────────────────────────────────────────────────
+
+struct CacheEntry {
+    response: ProjectUsageResponse,
+    fetched_at: Instant,
+}
+
+static CACHE: std::sync::LazyLock<Mutex<HashMap<CacheKey, CacheEntry>>> =
+    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
+
+// ── Per-provider cancellation ────────────────────────────────────────────
+// When a new fetch starts for a provider, the previous one is cancelled.
+// This prevents Node process accumulation when the user rapidly switches
+// time ranges.
+
+static CANCEL_TOKENS: std::sync::LazyLock<Mutex<HashMap<String, Arc<AtomicBool>>>> =
+    std::sync::LazyLock::new(|| Mutex::new(HashMap::new()));
+
+/// Cancel any in-progress fetch for the given provider and return a fresh token.
+/// The old token (if any) is signalled so `run_with_runner` kills its child process.
+pub fn new_cancel_token(provider: &str) -> Arc<AtomicBool> {
+    let token = Arc::new(AtomicBool::new(false));
+    if let Ok(mut tokens) = CANCEL_TOKENS.lock() {
+        if let Some(old) = tokens.insert(provider.to_string(), token.clone()) {
+            old.store(true, Ordering::Relaxed);
+        }
+    }
+    token
+}
 
 #[derive(Copy, Clone, Debug)]
 enum Provider {
@@ -288,6 +322,7 @@ fn run_with_runner(
     program: &str,
     provider: Provider,
     since: Option<&str>,
+    cancel: &AtomicBool,
 ) -> Option<String> {
     let args = build_args(kind, provider, since);
     let path = enriched_path();
@@ -346,8 +381,18 @@ fn run_with_runner(
                 return extract_last_json(&out);
             }
             Ok(None) => {
+                if cancel.load(Ordering::Relaxed) {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                    log::info!(
+                        "[project_usage] ccusage cancelled for {}",
+                        runner_label(kind)
+                    );
+                    return None;
+                }
                 if std::time::Instant::now() >= deadline {
                     let _ = child.kill();
+                    let _ = child.wait();
                     log::warn!(
                         "[project_usage] ccusage timed out after {}s for {}",
                         CCUSAGE_TIMEOUT_SECS,
@@ -409,9 +454,28 @@ fn humanize_project_id(raw: &str) -> String {
 
 // ── Public API ─────────────────────────────────────────────────────────────
 
-pub fn query_project_usage(
+pub type CacheKey = (String, String);
+
+pub fn cache_key(provider: &str, since: Option<&str>) -> CacheKey {
+    (provider.to_string(), since.unwrap_or("").to_string())
+}
+
+/// Returns cached data and whether it's stale (past TTL).
+/// `None` means no cache entry exists.
+pub fn get_cached(key: &CacheKey) -> Option<(ProjectUsageResponse, bool)> {
+    let cache = CACHE.lock().ok()?;
+    let entry = cache.get(key)?;
+    let stale = entry.fetched_at.elapsed().as_secs() >= CACHE_TTL_SECS;
+    Some((entry.response.clone(), stale))
+}
+
+/// Always fetches fresh data from ccusage and updates the cache.
+/// The `cancel` token is checked during child process polling — if set, the
+/// child is killed early so we don't accumulate orphaned Node processes.
+pub fn fetch_fresh(
     provider: &str,
     since: Option<&str>,
+    cancel: &AtomicBool,
 ) -> Result<ProjectUsageResponse, String> {
     let ccusage_provider = parse_provider(provider);
     let runners = collect_runners();
@@ -420,7 +484,10 @@ pub fn query_project_usage(
     }
 
     for (kind, program) in &runners {
-        if let Some(json_str) = run_with_runner(*kind, program, ccusage_provider, since) {
+        if cancel.load(Ordering::Relaxed) {
+            return Err("Cancelled".into());
+        }
+        if let Some(json_str) = run_with_runner(*kind, program, ccusage_provider, since, cancel) {
             let parsed: CcusageInstancesOutput = serde_json::from_str(&json_str)
                 .map_err(|e| format!("Failed to parse ccusage output: {}", e))?;
 
@@ -539,13 +606,23 @@ pub fn query_project_usage(
             let mut grand_model_breakdowns: Vec<ModelBreakdown> = grand_model_map.into_values().collect();
             grand_model_breakdowns.sort_by(|a, b| b.cost.partial_cmp(&a.cost).unwrap_or(std::cmp::Ordering::Equal));
 
-            return Ok(ProjectUsageResponse {
+            let response = ProjectUsageResponse {
                 provider: provider.to_string(),
                 projects,
                 total_tokens: grand_total_tokens,
                 total_cost: grand_total_cost,
                 model_breakdowns: grand_model_breakdowns,
-            });
+            };
+
+            // Store in cache
+            if let Ok(mut cache) = CACHE.lock() {
+                cache.insert(cache_key(provider, since), CacheEntry {
+                    response: response.clone(),
+                    fetched_at: Instant::now(),
+                });
+            }
+
+            return Ok(response);
         }
     }
 
