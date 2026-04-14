@@ -11,6 +11,7 @@ interface ProviderProjectsPageProps {
 }
 
 const TIME_RANGE_OPTIONS: { label: string; value: ProjectTimeRange }[] = [
+  { label: "1d", value: "1d" },
   { label: "7d", value: "7d" },
   { label: "30d", value: "30d" },
   { label: "90d", value: "90d" },
@@ -355,12 +356,38 @@ export function ProviderProjectsPage({ providerId }: ProviderProjectsPageProps) 
       ) : (
         <>
           {/* Summary */}
-          <div className="flex items-baseline gap-2 text-xs">
-            <span className="text-muted-foreground">{projects.length} projects</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="font-medium text-foreground">{formatCost(data?.totalCost ?? 0)}</span>
-            <span className="text-muted-foreground">·</span>
-            <span className="text-muted-foreground">{formatTokens(data?.totalTokens ?? 0)} tokens</span>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-baseline gap-2 text-xs">
+              <span className="text-muted-foreground">{projects.length} projects</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="font-medium text-foreground">{formatCost(data?.totalCost ?? 0)}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">{formatTokens(data?.totalTokens ?? 0)} tokens</span>
+            </div>
+            <button
+              type="button"
+              onClick={refetch}
+              disabled={loading}
+              className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-40"
+              title="Refresh data"
+            >
+              <svg
+                className={cn("size-3.5", loading && "animate-spin")}
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M13.5 8a5.5 5.5 0 0 1-9.36 3.93" />
+                <path d="M2.5 8a5.5 5.5 0 0 1 9.36-3.93" />
+                <path d="M11.86 4.07L12.5 1.5" />
+                <path d="M11.86 4.07L14.5 4.5" />
+                <path d="M4.14 11.93L3.5 14.5" />
+                <path d="M4.14 11.93L1.5 11.5" />
+              </svg>
+            </button>
           </div>
 
           {/* Model breakdown */}
