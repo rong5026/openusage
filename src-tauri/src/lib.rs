@@ -512,14 +512,42 @@ fn get_available_metrics(
 
 #[tauri::command]
 async fn get_project_usage(
+    app: tauri::AppHandle,
     provider: String,
     since: Option<String>,
+    force_refresh: Option<bool>,
 ) -> Result<project_usage::ProjectUsageResponse, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        project_usage::query_project_usage(&provider, since.as_deref())
+    let force = force_refresh.unwrap_or(false);
+    let key = project_usage::cache_key(&provider, since.as_deref());
+
+    // Check cache — return immediately if fresh (skip when force refresh)
+    if !force {
+        if let Some((cached, stale)) = project_usage::get_cached(&key) {
+            if stale {
+                // Return stale data now, refresh in background.
+                // new_cancel_token cancels any previous in-progress fetch for this provider.
+                let cancel = project_usage::new_cancel_token(&provider);
+                let p = provider.clone();
+                let s = since.clone();
+                tauri::async_runtime::spawn_blocking(move || {
+                    if let Ok(fresh) = project_usage::fetch_fresh(&p, s.as_deref(), &cancel) {
+                        let _ = app.emit("project-usage:updated", &fresh);
+                    }
+                });
+            }
+            return Ok(cached);
+        }
+    }
+
+    // No cache — cancel any previous fetch for this provider and fetch synchronously
+    let cancel = project_usage::new_cancel_token(&provider);
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        project_usage::fetch_fresh(&provider, since.as_deref(), &cancel)
     })
     .await
-    .map_err(|e| e.to_string())?
+    .map_err(|e| e.to_string())?;
+
+    result
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
